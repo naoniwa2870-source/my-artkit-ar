@@ -3,6 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Artkit AR Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
@@ -27,15 +28,13 @@
         .arjs-loader {
             height: 100%; width: 100%;
             position: fixed; top: 0; left: 0;
-            /* 漆黒 + 微細なノイズテクスチャ感をグラデーションで表現 */
             background:
-                radial-gradient(ellipse at 50% 40%, rgba(212,175,55,0.05) 0%, transparent 60%),
-                radial-gradient(ellipse at 30% 70%, rgba(212,175,55,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 42%, rgba(212,175,55,0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 30% 75%, rgba(212,175,55,0.03) 0%, transparent 45%),
                 #0a0a0a;
             display: flex;
             flex-direction: column; justify-content: center; align-items: center;
             z-index: 9999;
-            /* フェードアウト用トランジション */
             opacity: 1;
             transition: opacity 1.2s ease;
             pointer-events: auto;
@@ -54,45 +53,116 @@
             pointer-events: none;
         }
 
-        /* ローディングコンテンツ */
-        .loader-content {
+        /* ===== 魔法の円 ===== */
+        .magic-wrap {
             position: relative;
+            z-index: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 18px;
-            z-index: 1;
+            gap: 32px;
         }
 
-        /* 装飾ライン */
-        .loader-line {
-            width: 48px; height: 1px;
-            background: linear-gradient(90deg, transparent, #d4af37, transparent);
+        /* 一番外側のゆらぐ薄リング */
+        .magic-ring-outer {
+            position: absolute;
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            border: 1px solid rgba(212,175,55,0.12);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation: breathe 4s ease-in-out infinite;
+            pointer-events: none;
         }
 
-        /* ゴールドのメインテキスト（パルスアニメーション） */
-        .loader-text {
-            font-size: 1.15rem;
+        /* 円本体（静止リング） */
+        .magic-circle {
+            position: relative;
+            width: 160px; height: 160px;
+            border-radius: 50%;
+            border: 1px solid rgba(212,175,55,0.18);
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* 外側の回転する弧 */
+        .magic-circle::before {
+            content: '';
+            position: absolute;
+            width: 168px; height: 168px;
+            top: -5px; left: -5px;
+            border: 2px solid transparent;
+            border-top-color: #d4af37;
+            border-right-color: rgba(212,175,55,0.35);
+            border-radius: 50%;
+            animation: draw-circle 3s linear infinite;
+            filter: drop-shadow(0 0 5px rgba(212,175,55,0.7));
+        }
+
+        /* 内側の逆回転する弧 */
+        .magic-circle::after {
+            content: '';
+            position: absolute;
+            width: 138px; height: 138px;
+            top: 10px; left: 10px;
+            border: 1px solid transparent;
+            border-bottom-color: rgba(212,175,55,0.45);
+            border-left-color:   rgba(212,175,55,0.2);
+            border-radius: 50%;
+            animation: draw-circle-reverse 4.5s linear infinite;
+        }
+
+        /* 中心の光点 */
+        .magic-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: #d4af37;
+            box-shadow: 0 0 8px rgba(212,175,55,0.9), 0 0 20px rgba(212,175,55,0.4);
+            animation: dot-glow 2.8s ease-in-out infinite;
+        }
+
+        @keyframes draw-circle         { to { transform: rotate(360deg);  } }
+        @keyframes draw-circle-reverse { to { transform: rotate(-360deg); } }
+
+        @keyframes breathe {
+            0%, 100% { transform: translate(-50%, -50%) scale(1);    opacity: 0.4; }
+            50%       { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; }
+        }
+
+        @keyframes dot-glow {
+            0%, 100% { box-shadow: 0 0 6px rgba(212,175,55,0.6); }
+            50%       { box-shadow: 0 0 14px rgba(212,175,55,1), 0 0 28px rgba(212,175,55,0.4); }
+        }
+
+        /* テキストエリア */
+        .magic-text-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .magic-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem;
+            font-weight: 400;
             color: #d4af37;
-            letter-spacing: 0.18em;
-            font-weight: 300;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            letter-spacing: 0.12em;
+            text-align: center;
             animation: gold-pulse 2.8s ease-in-out infinite;
-            text-shadow: 0 0 12px rgba(212,175,55,0.4);
+            text-shadow: 0 0 12px rgba(212,175,55,0.35);
         }
 
-        /* ブランド名 */
-        .loader-brand {
-            font-size: 0.6rem;
-            color: rgba(212,175,55,0.4);
-            letter-spacing: 0.4em;
+        .magic-brand {
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 0.58rem;
+            color: rgba(212,175,55,0.38);
+            letter-spacing: 0.45em;
             text-transform: uppercase;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
 
         @keyframes gold-pulse {
-            0%, 100% { opacity: 0.45; text-shadow: 0 0 8px rgba(212,175,55,0.2); }
-            50%       { opacity: 1;    text-shadow: 0 0 20px rgba(212,175,55,0.6), 0 0 40px rgba(212,175,55,0.2); }
+            0%, 100% { opacity: 0.5; text-shadow: 0 0 8px rgba(212,175,55,0.2); }
+            50%       { opacity: 1;   text-shadow: 0 0 22px rgba(212,175,55,0.65), 0 0 44px rgba(212,175,55,0.2); }
         }
 
         #scanning-overlay {
@@ -110,14 +180,22 @@
 
 <body>
     <div id="loader" class="arjs-loader">
-        <!-- パーティクル描画キャンバス -->
         <canvas id="particle-canvas"></canvas>
 
-        <div class="loader-content">
-            <div class="loader-line"></div>
-            <div class="loader-text">芸術に命を吹き込んでいます...</div>
-            <div class="loader-line"></div>
-            <div class="loader-brand">My Artkit Premium</div>
+        <div class="magic-wrap">
+            <!-- 魔法の円 -->
+            <div style="position: relative; width: 160px; height: 160px;">
+                <div class="magic-ring-outer"></div>
+                <div class="magic-circle">
+                    <div class="magic-dot"></div>
+                </div>
+            </div>
+
+            <!-- テキスト -->
+            <div class="magic-text-area">
+                <div class="magic-text">芸術に命を吹き込んでいます...</div>
+                <div class="magic-brand">My Artkit Premium</div>
+            </div>
         </div>
     </div>
 
