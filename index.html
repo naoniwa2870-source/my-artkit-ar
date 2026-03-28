@@ -169,6 +169,8 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 10; pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.5s ease;
         }
         .scan-frame {
             width: 250px; height: 250px;
@@ -334,12 +336,14 @@
         });
 
         sceneEl.addEventListener('targetFound', function () {
-            overlay.style.display = 'none';
+            overlay.style.opacity = '0';
+            setTimeout(function () { overlay.style.display = 'none'; }, 500);
             playDogVideo();
         });
 
         sceneEl.addEventListener('targetLost', function () {
             overlay.style.display = 'flex';
+            setTimeout(function () { overlay.style.opacity = '1'; }, 10);
             pauseDogVideo();
         });
     </script>
