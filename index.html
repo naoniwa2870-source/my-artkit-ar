@@ -8,24 +8,21 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        /* 1. 画面の余白を完全にゼロにする */
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            position: fixed; /* iPhoneのスクロール防止 */
+            position: fixed;
             background-color: #000;
         }
 
-        /* 2. ARシーンを全画面に強制 */
         a-scene {
             width: 100vw;
             height: 100vh;
         }
 
-        /* 3. ローディング画面 */
         .arjs-loader {
             height: 100%; width: 100%; position: absolute; top: 0; left: 0;
             background-color: rgba(0, 0, 0, 0.9); display: flex;
@@ -33,7 +30,6 @@
             z-index: 9999; color: #fff;
         }
 
-        /* 4. スキャン枠（高級感を出すため） */
         #scanning-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -64,16 +60,28 @@
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false">
 
+        <a-assets>
+            <video
+                id="dog-video"
+                src="./assets/dog-run.mp4"
+                preload="auto"
+                muted
+                loop
+                playsinline
+                webkit-playsinline
+                crossorigin="anonymous"></video>
+        </a-assets>
+
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-sphere
+            <a-video
+                id="dog-video-plane"
+                src="#dog-video"
+                width="1"
+                height="1"
                 position="0 0 0"
-                radius="0.5"
-                material="color: #d4af37; metalness: 0.8; roughness: 0.2; opacity: 0.9"
-                animation="property: position; to: 0 0.2 0.1; dir: alternate; dur: 2000; loop: true">
-            </a-sphere>
-            <a-text value="Memory is Alive" color="#d4af37" align="center" width="3" position="0 -0.8 0"></a-text>
+                rotation="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
@@ -81,21 +89,45 @@
         const sceneEl = document.querySelector('a-scene');
         const loader = document.querySelector('#loader');
         const overlay = document.querySelector('#scanning-overlay');
+        const dogVideo = document.querySelector('#dog-video');
+        const dogVideoPlane = document.querySelector('#dog-video-plane');
 
-        // ARの準備ができたら
-        sceneEl.addEventListener("arReady", (event) => {
+        // 動画のアスペクト比に合わせてa-videoのサイズを自動調整
+        if (dogVideo && dogVideoPlane) {
+            dogVideo.addEventListener('loadedmetadata', function () {
+                var w = dogVideo.videoWidth;
+                var h = dogVideo.videoHeight;
+                if (!w || !h) return;
+                var baseW = 1;
+                dogVideoPlane.setAttribute('width', baseW);
+                dogVideoPlane.setAttribute('height', baseW * (h / w));
+            });
+        }
+
+        function playDogVideo() {
+            if (!dogVideo) return;
+            dogVideo.muted = true;
+            dogVideo.play().catch(function () {});
+        }
+
+        function pauseDogVideo() {
+            if (!dogVideo) return;
+            dogVideo.pause();
+        }
+
+        sceneEl.addEventListener('arReady', function () {
             loader.style.display = 'none';
             overlay.style.display = 'flex';
         });
 
-        // ターゲットを認識したら枠を消す
-        sceneEl.addEventListener("targetFound", event => {
+        sceneEl.addEventListener('targetFound', function () {
             overlay.style.display = 'none';
+            playDogVideo();
         });
 
-        // ターゲットを見失ったら枠を出す
-        sceneEl.addEventListener("targetLost", event => {
+        sceneEl.addEventListener('targetLost', function () {
             overlay.style.display = 'flex';
+            pauseDogVideo();
         });
     </script>
 </body>
