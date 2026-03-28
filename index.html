@@ -270,20 +270,20 @@
             loader.querySelector('.magic-wrap').innerHTML =
                 '<p class="loader-error">オーダーIDを入力してください。<br>URLに ?id=オーダーID を付けてアクセスしてください。</p>';
         } else {
-            var markerSrc = './assets/' + orderId + '/target.mind';
+            var markerSrc = './assets/' + orderId + '/targets.mind';
             var videoSrc  = './assets/' + orderId + '/' + orderId + '.mp4';
 
-            // ===== a-scene を動的生成（属性が確定した状態でA-Frameに渡す） =====
-            document.getElementById('ar-container').innerHTML =
+            // ===== a-scene を動的生成（属性確定済みの状態でA-Frameに渡す） =====
+            var container = document.getElementById('ar-container');
+            container.innerHTML =
                 '<a-scene' +
-                '    mindar-image="imageTargetSrc: ' + markerSrc + '; uiLoading: no; uiScanning: no;"' +
-                '    color-space="sRGB"' +
-                '    renderer="colorManagement: true, physicallyCorrectLights"' +
-                '    vr-mode-ui="enabled: false"' +
-                '    device-orientation-permission-ui="enabled: false">' +
+                '  mindar-image="imageTargetSrc: ' + markerSrc + '; autoStart: true; uiLoading: no; uiScanning: no;"' +
+                '  color-space="sRGB"' +
+                '  renderer="colorManagement: true, physicallyCorrectLights"' +
+                '  vr-mode-ui="enabled: false"' +
+                '  device-orientation-permission-ui="enabled: false">' +
                 '  <a-assets>' +
-                '    <video id="dog-video" src="' + videoSrc + '" preload="auto" muted loop playsinline webkit-playsinline crossorigin="anonymous"' +
-                '      onerror="window.__videoLoadError=true"></video>' +
+                '    <video id="dog-video" src="' + videoSrc + '" preload="auto" muted loop playsinline webkit-playsinline crossorigin="anonymous"></video>' +
                 '  </a-assets>' +
                 '  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>' +
                 '  <a-entity mindar-image-target="targetIndex: 0">' +
@@ -291,9 +291,15 @@
                 '  </a-entity>' +
                 '</a-scene>';
 
-            var sceneEl      = document.querySelector('a-scene');
-            var dogVideo     = document.querySelector('#dog-video');
-            var dogVideoPlane = document.querySelector('#dog-video-plane');
+            // container 内から取得（document全体への誤ヒットを防ぐ）
+            var sceneEl       = container.querySelector('a-scene');
+            var dogVideo      = container.querySelector('#dog-video');
+            var dogVideoPlane = container.querySelector('#dog-video-plane');
+
+            // A-Frame の loaded 後に明示的に play() してカメラを確実に起動
+            sceneEl.addEventListener('loaded', function () {
+                sceneEl.play();
+            });
 
             // 動画のアスペクト比に合わせてa-videoのサイズを自動調整
             if (dogVideo && dogVideoPlane) {
