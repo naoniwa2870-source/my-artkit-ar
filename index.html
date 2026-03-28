@@ -162,40 +162,13 @@
         <p style="color: #d4af37; margin-top: 20px;">絵を枠内に収めてください</p>
     </div>
 
-    <!--
-        <a-scene> は静的HTML として配置。
-        src / imageTargetSrc は下の <script> で A-Frame 初期化前に上書きする。
-    -->
-    <a-scene
-        id="ar-scene"
-        mindar-image="imageTargetSrc: ./assets/placeholder/targets.mind; uiLoading: no; uiScanning: no;"
-        color-space="sRGB"
-        renderer="colorManagement: true, physicallyCorrectLights"
-        vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: false">
-
-        <a-assets>
-            <video id="dog-video" src=""
-                preload="auto" muted loop playsinline
-                webkit-playsinline crossorigin="anonymous"></video>
-        </a-assets>
-
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-        <a-entity mindar-image-target="targetIndex: 0">
-            <a-video id="dog-video-plane"
-                src="#dog-video" width="1" height="1"
-                position="0 0 0" rotation="0 0 0"></a-video>
-        </a-entity>
-    </a-scene>
+    <!-- a-scene は JS で createElement してから appendChild する（属性確定後に DOM 追加） -->
+    <div id="ar-container"></div>
 
     <script>
-        var loader   = document.getElementById('loader');
-        var overlay  = document.getElementById('scanning-overlay');
-        var sceneEl  = document.getElementById('ar-scene');
-        var dogVideo = document.getElementById('dog-video');
-        var dogVideoPlane = document.getElementById('dog-video-plane');
-        var orderId  = window.__orderId;
+        var loader  = document.getElementById('loader');
+        var overlay = document.getElementById('scanning-overlay');
+        var orderId = window.__orderId;
 
         // ===== パーティクル =====
         (function () {
@@ -239,30 +212,76 @@
             var markerSrc = './assets/' + orderId + '/targets.mind';
             var videoSrc  = './assets/' + orderId + '/' + orderId + '.mp4';
 
-            // A-Frame の init() が走る前に属性を上書き（同期的に実行される）
+            // ===== createElement で属性を確定してから DOM に追加 =====
+            // → connectedCallback が発火する時点で全属性がセット済み
+
+            // <video>
+            var videoEl = document.createElement('video');
+            videoEl.id = 'dog-video';
+            videoEl.src = videoSrc;
+            videoEl.setAttribute('preload', 'auto');
+            videoEl.muted = true;
+            videoEl.loop  = true;
+            videoEl.setAttribute('playsinline', '');
+            videoEl.setAttribute('webkit-playsinline', '');
+            videoEl.setAttribute('crossorigin', 'anonymous');
+
+            // <a-assets>
+            var assetsEl = document.createElement('a-assets');
+            assetsEl.appendChild(videoEl);
+
+            // <a-video>
+            var aVideoEl = document.createElement('a-video');
+            aVideoEl.id = 'dog-video-plane';
+            aVideoEl.setAttribute('src', '#dog-video');
+            aVideoEl.setAttribute('width', '1');
+            aVideoEl.setAttribute('height', '1');
+            aVideoEl.setAttribute('position', '0 0 0');
+            aVideoEl.setAttribute('rotation', '0 0 0');
+
+            // <a-entity mindar-image-target>
+            var targetEl = document.createElement('a-entity');
+            targetEl.setAttribute('mindar-image-target', 'targetIndex: 0');
+            targetEl.appendChild(aVideoEl);
+
+            // <a-camera>
+            var cameraEl = document.createElement('a-camera');
+            cameraEl.setAttribute('position', '0 0 0');
+            cameraEl.setAttribute('look-controls', 'enabled: false');
+
+            // <a-scene> — 全属性をセットしてから最後に appendChild
+            var sceneEl = document.createElement('a-scene');
             sceneEl.setAttribute('mindar-image',
                 'imageTargetSrc: ' + markerSrc + '; uiLoading: no; uiScanning: no;');
-            dogVideo.src = videoSrc;
+            sceneEl.setAttribute('color-space', 'sRGB');
+            sceneEl.setAttribute('renderer', 'colorManagement: true, physicallyCorrectLights');
+            sceneEl.setAttribute('vr-mode-ui', 'enabled: false');
+            sceneEl.setAttribute('device-orientation-permission-ui', 'enabled: false');
+            sceneEl.appendChild(assetsEl);
+            sceneEl.appendChild(cameraEl);
+            sceneEl.appendChild(targetEl);
 
-            // 動画のアスペクト比に合わせて a-video サイズを自動調整
-            dogVideo.addEventListener('loadedmetadata', function () {
-                var w = dogVideo.videoWidth, h = dogVideo.videoHeight;
+            // DOM に追加 → ここで connectedCallback が発火し A-Frame が正しく初期化
+            document.getElementById('ar-container').appendChild(sceneEl);
+
+            // 動画アスペクト比の自動調整
+            videoEl.addEventListener('loadedmetadata', function () {
+                var w = videoEl.videoWidth, h = videoEl.videoHeight;
                 if (w && h) {
-                    dogVideoPlane.setAttribute('width', 1);
-                    dogVideoPlane.setAttribute('height', h / w);
+                    aVideoEl.setAttribute('width', 1);
+                    aVideoEl.setAttribute('height', h / w);
                 }
             });
 
-            dogVideo.addEventListener('error', function () {
+            videoEl.addEventListener('error', function () {
                 loader.querySelector('.magic-wrap').innerHTML =
                     '<p class="loader-error">動画ファイルが見つかりません。<br>' +
                     '<span style="font-size:0.75rem;opacity:0.6;">' + videoSrc + '</span></p>';
             });
 
-            function playVideo()  { dogVideo.muted = true; dogVideo.play().catch(function(){}); }
-            function pauseVideo() { dogVideo.pause(); }
+            function playVideo()  { videoEl.muted = true; videoEl.play().catch(function(){}); }
+            function pauseVideo() { videoEl.pause(); }
 
-            // arReady → ローディング画面フェードアウト
             sceneEl.addEventListener('arReady', function () {
                 loader.classList.add('fade-out');
                 setTimeout(function () {
