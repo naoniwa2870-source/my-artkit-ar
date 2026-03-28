@@ -196,6 +196,76 @@
         a-scene {
             display: none;
         }
+
+        /* ===== スキャンガイド枠 ===== */
+        #scanning-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0;            /* arReady まで非表示 */
+            transition: opacity 0.6s ease;
+        }
+
+        #scanning-overlay.visible {
+            opacity: 1;
+        }
+
+        #scanning-overlay.hide {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .scan-frame {
+            position: relative;
+            width: min(70vw, 70vh);
+            height: min(70vw, 70vh);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+        }
+
+        /* 4隅のブラケット（各コーナーを独立した要素で作る） */
+        .corner {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-color: #d4af37;
+            border-style: solid;
+        }
+        .corner-tl { top: -1px;    left: -1px;    border-width: 2px 0 0 2px; }
+        .corner-tr { top: -1px;    right: -1px;   border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: -1px; left: -1px;    border-width: 0 0 2px 2px; }
+        .corner-br { bottom: -1px; right: -1px;   border-width: 0 2px 2px 0; }
+
+        /* スキャンライン（横に流れる） */
+        .scan-line {
+            position: absolute;
+            left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.7), transparent);
+            animation: scan-move 2.4s ease-in-out infinite;
+            box-shadow: 0 0 6px rgba(212, 175, 55, 0.4);
+        }
+
+        @keyframes scan-move {
+            0%   { top: 0%;   opacity: 0; }
+            10%  { opacity: 1; }
+            90%  { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .scan-label {
+            margin-top: 20px;
+            color: #d4af37;
+            font-size: 0.75rem;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            opacity: 0.8;
+            animation: text-fade 2.4s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -235,6 +305,18 @@
             <div class="brand-name">My Artkit Premium</div>
         </div>
 
+    </div>
+
+    <!-- ===== スキャンガイド枠（arReady 後に表示、targetFound で消える） ===== -->
+    <div id="scanning-overlay">
+        <div class="scan-frame">
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            <div class="scan-line"></div>
+        </div>
+        <p class="scan-label">絵を枠内に収めてください</p>
     </div>
 
     <!-- ===== Mind-AR シーン ===== -->
@@ -281,13 +363,15 @@
         const loader   = document.querySelector('.arjs-loader');
         const arTarget = document.querySelector('#ar-target');
         const arObject = document.querySelector('#ar-object');
+        const scanOverlay = document.querySelector('#scanning-overlay');
 
-        // Mind-AR の準備完了 → ローディング画面をフェードアウト
+        // Mind-AR の準備完了 → ローディング画面をフェードアウト → スキャン枠を表示
         scene.addEventListener('arReady', () => {
             loader.classList.add('fade-out');
             setTimeout(() => {
                 loader.style.display = 'none';
                 scene.style.display = 'block';
+                scanOverlay.classList.add('visible');
             }, 1000);
         });
 
@@ -317,6 +401,10 @@
         let soundCooldown = false;
 
         arTarget.addEventListener('targetFound', () => {
+            // スキャン枠をフェードアウトして非表示
+            scanOverlay.classList.add('hide');
+            setTimeout(() => { scanOverlay.style.display = 'none'; }, 500);
+
             arObject.setAttribute('visible', true);
             // ゼロスケールから等倍へ弾むように拡大
             arObject.setAttribute('scale', '0 0 0');
@@ -330,9 +418,12 @@
             }
         });
 
-        // マーカー消失 → 非表示
+        // マーカー消失 → AR非表示 + スキャン枠を再表示
         arTarget.addEventListener('targetLost', () => {
             arObject.setAttribute('visible', false);
+            scanOverlay.style.display = 'flex';
+            scanOverlay.classList.remove('hide');
+            scanOverlay.classList.add('visible');
         });
     </script>
 
