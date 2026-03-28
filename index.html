@@ -183,11 +183,7 @@
         }
 
         /* ===== ID チェック ===== */
-        if (!orderId) {
-            showError('オーダーIDを入力してください。',
-                      'URL に ?id=オーダーID を付けてアクセスしてください。');
-            return;
-        }
+        if (!orderId) { return; }
 
         var markerSrc = './assets/' + orderId + '/targets.mind';
         var videoBase = './assets/' + orderId + '/' + orderId + '.mp4';
