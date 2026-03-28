@@ -277,7 +277,7 @@
             var container = document.getElementById('ar-container');
             container.innerHTML =
                 '<a-scene' +
-                '  mindar-image="imageTargetSrc: ' + markerSrc + '; autoStart: false; uiLoading: no; uiScanning: no;"' +
+                '  mindar-image="imageTargetSrc: ' + markerSrc + '; uiLoading: no; uiScanning: no;"' +
                 '  color-space="sRGB"' +
                 '  renderer="colorManagement: true, physicallyCorrectLights"' +
                 '  vr-mode-ui="enabled: false"' +
@@ -296,17 +296,6 @@
             var dogVideo      = container.querySelector('#dog-video');
             var dogVideoPlane = container.querySelector('#dog-video-plane');
 
-            // A-Frame の loaded 後、パスが確定した状態で手動でAR起動
-            // autoStart: false のため、ここで明示的に start() を呼ぶ
-            sceneEl.addEventListener('loaded', function () {
-                var mindSys = sceneEl.systems['mindar-image'];
-                if (mindSys && typeof mindSys.start === 'function') {
-                    mindSys.start();
-                } else {
-                    // フォールバック: システム名が異なるブラウザ環境向け
-                    sceneEl.play();
-                }
-            });
 
             // 動画のアスペクト比に合わせてa-videoのサイズを自動調整
             if (dogVideo && dogVideoPlane) {
