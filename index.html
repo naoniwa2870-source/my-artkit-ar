@@ -27,10 +27,7 @@
         /* ===== ローディング画面 ===== */
         #loader {
             height: 100%; width: 100%; position: fixed; top: 0; left: 0;
-            background:
-                radial-gradient(ellipse at 50% 42%, rgba(212,175,55,.08) 0%, transparent 58%),
-                radial-gradient(ellipse at 30% 78%, rgba(212,175,55,.04) 0%, transparent 48%),
-                #050505;
+            background-color: #000;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
             z-index: 9999; opacity: 1;
@@ -51,115 +48,35 @@
             width: 100%; height: 100%; pointer-events: none;
         }
 
-        .magic-wrap {
-            position: relative; z-index: 1;
-            display: flex; flex-direction: column; align-items: center;
-            animation: ritualHostIn 2.4s cubic-bezier(.22, 1, .36, 1) forwards;
-        }
-        @keyframes ritualHostIn {
-            from { opacity: 0; filter: blur(6px); transform: scale(.94); }
-            to   { opacity: 1; filter: blur(0);   transform: scale(1); }
-        }
-
-        .ritual-circle-host {
-            position: relative;
-            width: min(72vw, 280px);
-            height: min(72vw, 280px);
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .ritual-svg {
-            position: absolute; inset: 0;
-            width: 100%; height: 100%;
-            transform: rotate(-90deg);
-            animation: ritualSlowSpin 48s linear infinite;
-        }
-        @keyframes ritualSlowSpin {
-            to { transform: rotate(270deg); }
-        }
-
-        .ritual-ring-bg {
-            fill: none;
-            stroke: rgba(212,175,55,.14);
-            stroke-width: 1;
-        }
-        .ritual-ring-glow {
-            fill: none;
-            stroke: url(#ritualGoldGrad);
-            stroke-width: 2.2;
-            stroke-linecap: round;
-            filter: drop-shadow(0 0 6px rgba(212,175,55,.45));
-            stroke-dasharray: 282.74 282.74;
-            stroke-dashoffset: 282.74;
-            animation: ritualDrawCircle 6.8s cubic-bezier(.42, 0, .2, 1) infinite alternate;
-        }
-        @keyframes ritualDrawCircle {
-            0%   { stroke-dashoffset: 282.74; opacity: .35; }
-            100% { stroke-dashoffset: 0;       opacity: 1; }
-        }
-
-        .ritual-inner-halo {
-            position: absolute;
-            width: 58%; height: 58%;
+        .magic-circle {
+            width: 150px; height: 150px;
+            border: 4px solid rgba(212,175,55,0.3);
             border-radius: 50%;
-            border: 1px solid rgba(212,175,55,.1);
-            box-shadow:
-                inset 0 0 40px rgba(212,175,55,.06),
-                0 0 24px rgba(212,175,55,.08);
-            pointer-events: none;
-            animation: ritualHalo 5s ease-in-out infinite;
+            position: relative;
         }
-        @keyframes ritualHalo {
-            0%, 100% { transform: scale(1);   opacity: .45; }
-            50%      { transform: scale(1.04); opacity: .85; }
+        .magic-circle::before {
+            content: '';
+            position: absolute; inset: -4px;
+            border-radius: 50%;
+            border: 4px solid #d4af37;
+            border-right-color: transparent;
+            border-bottom-color: transparent;
+            animation: drawCircle 3s linear infinite;
         }
 
-        .ritual-msg {
-            position: relative; z-index: 2;
-            max-width: 11.5em;
-            margin: 0;
-            padding: 0 12px;
+        #loader-text {
             font-family: 'Playfair Display', serif;
-            font-size: clamp(.82rem, 2.8vw, 1.05rem);
-            font-weight: 500;
             color: #d4af37;
-            letter-spacing: .14em;
-            line-height: 1.75;
+            margin-top: 24px;
+            letter-spacing: .12em;
+            font-size: clamp(.85rem, 2.8vw, 1rem);
             text-align: center;
-            text-shadow: 0 0 20px rgba(212,175,55,.25);
-            animation: ritualTextBreath 4.2s ease-in-out infinite;
-        }
-        @keyframes ritualTextBreath {
-            0%, 100% { opacity: .72; }
-            50%      { opacity: 1; text-shadow: 0 0 28px rgba(212,175,55,.5); }
+            padding: 0 24px;
+            animation: pulseText 2s ease-in-out infinite;
         }
 
-        .magic-wrap.ritual-error {
-            animation: none;
-            opacity: 1;
-            filter: none;
-            transform: none;
-        }
-        .ritual-svg--static {
-            animation: none !important;
-            transform: rotate(-90deg);
-        }
-        .ritual-inner-halo--static {
-            animation: none;
-            opacity: .55;
-        }
-
-        .loader-msg {
-            font-family: 'Playfair Display', serif;
-            color: rgba(212,175,55,.82); font-size: clamp(.88rem, 3vw, 1.02rem);
-            letter-spacing: .1em; text-align: center;
-            padding: 0 28px; line-height: 1.85;
-            max-width: 20em;
-        }
-        .loader-msg small {
-            display: block; margin-top: 14px;
-            font-size: .62rem; opacity: .48; letter-spacing: .18em; line-height: 1.6;
-        }
+        @keyframes drawCircle { to { transform: rotate(360deg); } }
+        @keyframes pulseText { 50% { opacity: 0.5; } }
 
         /* スキャン枠 */
         #scanning-overlay {
@@ -187,23 +104,8 @@
     <!-- ローディング画面 -->
     <div id="loader">
         <canvas id="particle-canvas"></canvas>
-        <div class="magic-wrap" id="loader-magic-wrap">
-            <div class="ritual-circle-host">
-                <svg class="ritual-svg" viewBox="0 0 100 100" aria-hidden="true">
-                    <defs>
-                        <linearGradient id="ritualGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#d4af37" stop-opacity=".95"/>
-                            <stop offset="50%" stop-color="#f0e6b4" stop-opacity="1"/>
-                            <stop offset="100%" stop-color="#d4af37" stop-opacity=".75"/>
-                        </linearGradient>
-                    </defs>
-                    <circle class="ritual-ring-bg" cx="50" cy="50" r="45"/>
-                    <circle class="ritual-ring-glow" cx="50" cy="50" r="45"/>
-                </svg>
-                <div class="ritual-inner-halo"></div>
-                <p class="ritual-msg">芸術に命を吹き込んでいます...</p>
-            </div>
-        </div>
+        <div class="magic-circle"></div>
+        <p id="loader-text">芸術に命を吹き込んでいます...</p>
     </div>
 
     <!-- スキャンガイド枠 -->
@@ -271,21 +173,13 @@
         }
 
         function showError(msg, sub) {
-            var wrap = document.getElementById('loader-magic-wrap');
-            var subHtml = sub ? '<small>' + escapeHtml(sub) + '</small>' : '';
-            wrap.classList.add('ritual-error');
-            wrap.innerHTML =
-                '<div class="ritual-circle-host">' +
-                '<svg class="ritual-svg ritual-svg--static" viewBox="0 0 100 100" aria-hidden="true">' +
-                '<defs><linearGradient id="ritualGoldGradErr" x1="0%" y1="0%" x2="100%" y2="100%">' +
-                '<stop offset="0%" stop-color="#d4af37" stop-opacity=".45"/>' +
-                '<stop offset="100%" stop-color="#d4af37" stop-opacity=".92"/></linearGradient></defs>' +
-                '<circle class="ritual-ring-bg" cx="50" cy="50" r="45"/>' +
-                '<circle fill="none" cx="50" cy="50" r="45" stroke="url(#ritualGoldGradErr)" ' +
-                'stroke-width="1.6" stroke-linecap="round" opacity=".72"/></svg>' +
-                '<div class="ritual-inner-halo ritual-inner-halo--static"></div>' +
-                '<p class="loader-msg">' + escapeHtml(msg) + subHtml + '</p>' +
-                '</div>';
+            var circle = loader.querySelector('.magic-circle');
+            var textEl = document.getElementById('loader-text');
+            if (circle) circle.style.animationPlayState = 'paused';
+            textEl.style.animation = 'none';
+            textEl.style.opacity = '1';
+            textEl.innerHTML = escapeHtml(msg) +
+                (sub ? '<br><small style="font-size:.65rem;opacity:.55;letter-spacing:.12em;">' + escapeHtml(sub) + '</small>' : '');
         }
 
         /* ===== ID チェック ===== */
