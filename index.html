@@ -4,25 +4,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Artkit AR Premium</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+
+    <!--
+        URLパラメータ (?id=xxx) を最初に読み込み、
+        A-Frame / Mind-AR のスクリプトより前にパスを確定させる
+    -->
+    <script>
+        (function () {
+            var rawId = new URLSearchParams(window.location.search).get('id') || '';
+            window.__orderId = rawId.replace(/[^a-zA-Z0-9_-]/g, '');
+        })();
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            position: fixed;
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden; position: fixed;
             background-color: #000;
         }
 
-        a-scene {
-            width: 100vw;
-            height: 100vh;
-        }
+        a-scene { width: 100vw; height: 100vh; }
 
         /* ===== ローディング画面 ===== */
         .arjs-loader {
@@ -32,64 +38,38 @@
                 radial-gradient(ellipse at 50% 42%, rgba(212,175,55,0.06) 0%, transparent 55%),
                 radial-gradient(ellipse at 30% 75%, rgba(212,175,55,0.03) 0%, transparent 45%),
                 #0a0a0a;
-            display: flex;
-            flex-direction: column; justify-content: center; align-items: center;
-            z-index: 9999;
-            opacity: 1;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999; opacity: 1;
             transition: opacity 1.2s ease;
             pointer-events: auto;
         }
+        .arjs-loader.fade-out { opacity: 0; pointer-events: none; }
 
-        .arjs-loader.fade-out {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* パーティクルキャンバス */
         #particle-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; pointer-events: none;
         }
 
-        /* ===== 魔法の円 ===== */
         .magic-wrap {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 32px;
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 32px;
         }
-
-        /* 一番外側のゆらぐ薄リング */
         .magic-ring-outer {
-            position: absolute;
-            width: 200px; height: 200px;
-            border-radius: 50%;
-            border: 1px solid rgba(212,175,55,0.12);
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            animation: breathe 4s ease-in-out infinite;
-            pointer-events: none;
+            position: absolute; width: 200px; height: 200px;
+            border-radius: 50%; border: 1px solid rgba(212,175,55,0.12);
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            animation: breathe 4s ease-in-out infinite; pointer-events: none;
         }
-
-        /* 円本体（静止リング） */
         .magic-circle {
-            position: relative;
-            width: 160px; height: 160px;
-            border-radius: 50%;
-            border: 1px solid rgba(212,175,55,0.18);
+            position: relative; width: 160px; height: 160px;
+            border-radius: 50%; border: 1px solid rgba(212,175,55,0.18);
             display: flex; justify-content: center; align-items: center;
         }
-
-        /* 外側の回転する弧 */
         .magic-circle::before {
-            content: '';
-            position: absolute;
-            width: 168px; height: 168px;
-            top: -5px; left: -5px;
+            content: ''; position: absolute;
+            width: 168px; height: 168px; top: -5px; left: -5px;
             border: 2px solid transparent;
             border-top-color: #d4af37;
             border-right-color: rgba(212,175,55,0.35);
@@ -97,96 +77,67 @@
             animation: draw-circle 3s linear infinite;
             filter: drop-shadow(0 0 5px rgba(212,175,55,0.7));
         }
-
-        /* 内側の逆回転する弧 */
         .magic-circle::after {
-            content: '';
-            position: absolute;
-            width: 138px; height: 138px;
-            top: 10px; left: 10px;
+            content: ''; position: absolute;
+            width: 138px; height: 138px; top: 10px; left: 10px;
             border: 1px solid transparent;
             border-bottom-color: rgba(212,175,55,0.45);
-            border-left-color:   rgba(212,175,55,0.2);
+            border-left-color: rgba(212,175,55,0.2);
             border-radius: 50%;
             animation: draw-circle-reverse 4.5s linear infinite;
         }
-
-        /* 中心の光点 */
         .magic-dot {
-            width: 5px; height: 5px;
-            border-radius: 50%;
+            width: 5px; height: 5px; border-radius: 50%;
             background: #d4af37;
             box-shadow: 0 0 8px rgba(212,175,55,0.9), 0 0 20px rgba(212,175,55,0.4);
             animation: dot-glow 2.8s ease-in-out infinite;
         }
-
         @keyframes draw-circle         { to { transform: rotate(360deg);  } }
         @keyframes draw-circle-reverse { to { transform: rotate(-360deg); } }
-
         @keyframes breathe {
-            0%, 100% { transform: translate(-50%, -50%) scale(1);    opacity: 0.4; }
-            50%       { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; }
+            0%, 100% { transform: translate(-50%,-50%) scale(1);   opacity: 0.4; }
+            50%       { transform: translate(-50%,-50%) scale(1.1); opacity: 0.9; }
         }
-
         @keyframes dot-glow {
             0%, 100% { box-shadow: 0 0 6px rgba(212,175,55,0.6); }
             50%       { box-shadow: 0 0 14px rgba(212,175,55,1), 0 0 28px rgba(212,175,55,0.4); }
         }
-
-        /* テキストエリア */
         .magic-text-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
         }
-
         .magic-text {
             font-family: 'Playfair Display', serif;
-            font-size: 1.05rem;
-            font-weight: 400;
-            color: #d4af37;
-            letter-spacing: 0.12em;
-            text-align: center;
+            font-size: 1.05rem; font-weight: 400;
+            color: #d4af37; letter-spacing: 0.12em; text-align: center;
             animation: gold-pulse 2.8s ease-in-out infinite;
             text-shadow: 0 0 12px rgba(212,175,55,0.35);
         }
-
         .magic-brand {
             font-family: 'Helvetica Neue', sans-serif;
-            font-size: 0.58rem;
-            color: rgba(212,175,55,0.38);
-            letter-spacing: 0.45em;
-            text-transform: uppercase;
+            font-size: 0.58rem; color: rgba(212,175,55,0.38);
+            letter-spacing: 0.45em; text-transform: uppercase;
         }
-
         @keyframes gold-pulse {
             0%, 100% { opacity: 0.5; text-shadow: 0 0 8px rgba(212,175,55,0.2); }
             50%       { opacity: 1;   text-shadow: 0 0 22px rgba(212,175,55,0.65), 0 0 44px rgba(212,175,55,0.2); }
         }
-
-        /* エラーメッセージ */
         .loader-error {
             font-family: 'Playfair Display', serif;
-            color: rgba(212,175,55,0.7);
-            font-size: 1.0rem;
-            letter-spacing: 0.12em;
-            text-align: center;
-            padding: 0 40px;
-            line-height: 1.8;
+            color: rgba(212,175,55,0.7); font-size: 1.0rem;
+            letter-spacing: 0.12em; text-align: center;
+            padding: 0 40px; line-height: 1.8;
         }
 
         #scanning-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
             z-index: 10; pointer-events: none;
-            opacity: 1;
-            transition: opacity 0.5s ease;
+            opacity: 1; transition: opacity 0.5s ease;
         }
         .scan-frame {
             width: 250px; height: 250px;
-            border: 2px solid rgba(212, 175, 55, 0.5);
-            position: relative;
+            border: 2px solid rgba(212,175,55,0.5); position: relative;
         }
     </style>
 </head>
@@ -194,17 +145,11 @@
 <body>
     <div id="loader" class="arjs-loader">
         <canvas id="particle-canvas"></canvas>
-
         <div class="magic-wrap">
-            <!-- 魔法の円 -->
             <div style="position: relative; width: 160px; height: 160px;">
                 <div class="magic-ring-outer"></div>
-                <div class="magic-circle">
-                    <div class="magic-dot"></div>
-                </div>
+                <div class="magic-circle"><div class="magic-dot"></div></div>
             </div>
-
-            <!-- テキスト -->
             <div class="magic-text-area">
                 <div class="magic-text">芸術に命を吹き込んでいます...</div>
                 <div class="magic-brand">My Artkit Premium</div>
@@ -217,29 +162,56 @@
         <p style="color: #d4af37; margin-top: 20px;">絵を枠内に収めてください</p>
     </div>
 
-    <!-- a-scene はJSで動的に生成する -->
-    <div id="ar-container"></div>
+    <!--
+        <a-scene> は静的HTML として配置。
+        src / imageTargetSrc は下の <script> で A-Frame 初期化前に上書きする。
+    -->
+    <a-scene
+        id="ar-scene"
+        mindar-image="imageTargetSrc: ./assets/placeholder/targets.mind; uiLoading: no; uiScanning: no;"
+        color-space="sRGB"
+        renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false">
+
+        <a-assets>
+            <video id="dog-video" src=""
+                preload="auto" muted loop playsinline
+                webkit-playsinline crossorigin="anonymous"></video>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <a-entity mindar-image-target="targetIndex: 0">
+            <a-video id="dog-video-plane"
+                src="#dog-video" width="1" height="1"
+                position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+    </a-scene>
 
     <script>
-        var loader  = document.querySelector('#loader');
-        var overlay = document.querySelector('#scanning-overlay');
+        var loader   = document.getElementById('loader');
+        var overlay  = document.getElementById('scanning-overlay');
+        var sceneEl  = document.getElementById('ar-scene');
+        var dogVideo = document.getElementById('dog-video');
+        var dogVideoPlane = document.getElementById('dog-video-plane');
+        var orderId  = window.__orderId;
 
         // ===== パーティクル =====
         (function () {
             var canvas = document.getElementById('particle-canvas');
             var ctx = canvas.getContext('2d');
-            var particles = [];
-            var W, H;
+            var particles = [], W, H;
             function resize() { W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight; }
             resize();
             window.addEventListener('resize', resize);
-            function rand(min, max) { return min + Math.random() * (max - min); }
+            function rand(a, b) { return a + Math.random() * (b - a); }
             for (var i = 0; i < 55; i++) {
                 particles.push({ x: rand(0,1), y: rand(0,1), size: rand(0.8,2.2),
                     speedX: rand(-0.08,0.08), speedY: rand(-0.18,-0.06),
                     alpha: rand(0,1), alphaSpeed: rand(0.004,0.012), alphaDir: 1 });
             }
-            function draw() {
+            (function draw() {
                 ctx.clearRect(0, 0, W, H);
                 particles.forEach(function (p) {
                     p.x += p.speedX / W * 60; p.y += p.speedY / H * 60;
@@ -252,72 +224,43 @@
                     ctx.arc(p.x * W, p.y * H, p.size, 0, Math.PI * 2);
                     ctx.fillStyle = 'rgba(212,175,55,' + (p.alpha * 0.85) + ')';
                     ctx.shadowColor = 'rgba(212,175,55,0.6)';
-                    ctx.shadowBlur  = 6;
+                    ctx.shadowBlur = 6;
                     ctx.fill();
                 });
                 requestAnimationFrame(draw);
-            }
-            draw();
+            })();
         })();
 
-        // ===== URLパラメータから注文IDを取得 =====
-        // 英数字・ハイフン・アンダースコアのみ許可（XSS対策）
-        var rawId   = new URLSearchParams(window.location.search).get('id') || '';
-        var orderId = rawId.replace(/[^a-zA-Z0-9_-]/g, '');
-
+        // ===== ID チェック =====
         if (!orderId) {
-            // ID未指定 → エラーメッセージを表示してAR起動しない
             loader.querySelector('.magic-wrap').innerHTML =
                 '<p class="loader-error">オーダーIDを入力してください。<br>URLに ?id=オーダーID を付けてアクセスしてください。</p>';
         } else {
             var markerSrc = './assets/' + orderId + '/targets.mind';
             var videoSrc  = './assets/' + orderId + '/' + orderId + '.mp4';
 
-            // ===== a-scene を動的生成（属性確定済みの状態でA-Frameに渡す） =====
-            var container = document.getElementById('ar-container');
-            container.innerHTML =
-                '<a-scene' +
-                '  mindar-image="imageTargetSrc: ' + markerSrc + '; uiLoading: no; uiScanning: no;"' +
-                '  color-space="sRGB"' +
-                '  renderer="colorManagement: true, physicallyCorrectLights"' +
-                '  vr-mode-ui="enabled: false"' +
-                '  device-orientation-permission-ui="enabled: false">' +
-                '  <a-assets>' +
-                '    <video id="dog-video" src="' + videoSrc + '" preload="auto" muted loop playsinline webkit-playsinline crossorigin="anonymous"></video>' +
-                '  </a-assets>' +
-                '  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>' +
-                '  <a-entity mindar-image-target="targetIndex: 0">' +
-                '    <a-video id="dog-video-plane" src="#dog-video" width="1" height="1" position="0 0 0" rotation="0 0 0"></a-video>' +
-                '  </a-entity>' +
-                '</a-scene>';
+            // A-Frame の init() が走る前に属性を上書き（同期的に実行される）
+            sceneEl.setAttribute('mindar-image',
+                'imageTargetSrc: ' + markerSrc + '; uiLoading: no; uiScanning: no;');
+            dogVideo.src = videoSrc;
 
-            // container 内から取得（document全体への誤ヒットを防ぐ）
-            var sceneEl       = container.querySelector('a-scene');
-            var dogVideo      = container.querySelector('#dog-video');
-            var dogVideoPlane = container.querySelector('#dog-video-plane');
-
-
-            // 動画のアスペクト比に合わせてa-videoのサイズを自動調整
-            if (dogVideo && dogVideoPlane) {
-                dogVideo.addEventListener('loadedmetadata', function () {
-                    var w = dogVideo.videoWidth, h = dogVideo.videoHeight;
-                    if (!w || !h) return;
+            // 動画のアスペクト比に合わせて a-video サイズを自動調整
+            dogVideo.addEventListener('loadedmetadata', function () {
+                var w = dogVideo.videoWidth, h = dogVideo.videoHeight;
+                if (w && h) {
                     dogVideoPlane.setAttribute('width', 1);
                     dogVideoPlane.setAttribute('height', h / w);
-                });
-            }
+                }
+            });
 
-            // 動画ファイルが見つからない場合のエラーハンドリング
-            if (dogVideo) {
-                dogVideo.addEventListener('error', function () {
-                    loader.querySelector('.magic-wrap').innerHTML =
-                        '<p class="loader-error">動画ファイルが見つかりません。<br>' +
-                        '<span style="font-size:0.75rem; opacity:0.6;">' + videoSrc + '</span></p>';
-                });
-            }
+            dogVideo.addEventListener('error', function () {
+                loader.querySelector('.magic-wrap').innerHTML =
+                    '<p class="loader-error">動画ファイルが見つかりません。<br>' +
+                    '<span style="font-size:0.75rem;opacity:0.6;">' + videoSrc + '</span></p>';
+            });
 
-            function playDogVideo()  { if (dogVideo) { dogVideo.muted = true; dogVideo.play().catch(function(){}); } }
-            function pauseDogVideo() { if (dogVideo) dogVideo.pause(); }
+            function playVideo()  { dogVideo.muted = true; dogVideo.play().catch(function(){}); }
+            function pauseVideo() { dogVideo.pause(); }
 
             // arReady → ローディング画面フェードアウト
             sceneEl.addEventListener('arReady', function () {
@@ -331,13 +274,13 @@
             sceneEl.addEventListener('targetFound', function () {
                 overlay.style.opacity = '0';
                 setTimeout(function () { overlay.style.display = 'none'; }, 500);
-                playDogVideo();
+                playVideo();
             });
 
             sceneEl.addEventListener('targetLost', function () {
                 overlay.style.display = 'flex';
                 setTimeout(function () { overlay.style.opacity = '1'; }, 10);
-                pauseDogVideo();
+                pauseVideo();
             });
         }
     </script>
