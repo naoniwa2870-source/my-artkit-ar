@@ -271,7 +271,7 @@
                 '<p class="loader-error">有効な注文IDが見つかりません。<br>URLに ?id=注文番号 を付けてアクセスしてください。</p>';
         } else {
             var markerSrc = './assets/' + orderId + '/targets.mind';
-            var videoSrc  = './assets/' + orderId + '/dog-run.mp4';
+            var videoSrc  = './assets/' + orderId + '/' + orderId + '.mp4';
 
             // ===== a-scene を動的生成（属性が確定した状態でA-Frameに渡す） =====
             document.getElementById('ar-container').innerHTML =
@@ -282,7 +282,8 @@
                 '    vr-mode-ui="enabled: false"' +
                 '    device-orientation-permission-ui="enabled: false">' +
                 '  <a-assets>' +
-                '    <video id="dog-video" src="' + videoSrc + '" preload="auto" muted loop playsinline webkit-playsinline crossorigin="anonymous"></video>' +
+                '    <video id="dog-video" src="' + videoSrc + '" preload="auto" muted loop playsinline webkit-playsinline crossorigin="anonymous"' +
+                '      onerror="window.__videoLoadError=true"></video>' +
                 '  </a-assets>' +
                 '  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>' +
                 '  <a-entity mindar-image-target="targetIndex: 0">' +
@@ -301,6 +302,15 @@
                     if (!w || !h) return;
                     dogVideoPlane.setAttribute('width', 1);
                     dogVideoPlane.setAttribute('height', h / w);
+                });
+            }
+
+            // 動画ファイルが見つからない場合のエラーハンドリング
+            if (dogVideo) {
+                dogVideo.addEventListener('error', function () {
+                    loader.querySelector('.magic-wrap').innerHTML =
+                        '<p class="loader-error">動画ファイルが見つかりません。<br>' +
+                        '<span style="font-size:0.75rem; opacity:0.6;">' + videoSrc + '</span></p>';
                 });
             }
 
