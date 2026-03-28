@@ -23,11 +23,76 @@
             height: 100vh;
         }
 
+        /* ===== ローディング画面 ===== */
         .arjs-loader {
-            height: 100%; width: 100%; position: absolute; top: 0; left: 0;
-            background-color: rgba(0, 0, 0, 0.9); display: flex;
+            height: 100%; width: 100%;
+            position: fixed; top: 0; left: 0;
+            /* 漆黒 + 微細なノイズテクスチャ感をグラデーションで表現 */
+            background:
+                radial-gradient(ellipse at 50% 40%, rgba(212,175,55,0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 70%, rgba(212,175,55,0.03) 0%, transparent 50%),
+                #0a0a0a;
+            display: flex;
             flex-direction: column; justify-content: center; align-items: center;
-            z-index: 9999; color: #fff;
+            z-index: 9999;
+            /* フェードアウト用トランジション */
+            opacity: 1;
+            transition: opacity 1.2s ease;
+            pointer-events: auto;
+        }
+
+        .arjs-loader.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* パーティクルキャンバス */
+        #particle-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+        }
+
+        /* ローディングコンテンツ */
+        .loader-content {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            z-index: 1;
+        }
+
+        /* 装飾ライン */
+        .loader-line {
+            width: 48px; height: 1px;
+            background: linear-gradient(90deg, transparent, #d4af37, transparent);
+        }
+
+        /* ゴールドのメインテキスト（パルスアニメーション） */
+        .loader-text {
+            font-size: 1.15rem;
+            color: #d4af37;
+            letter-spacing: 0.18em;
+            font-weight: 300;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            animation: gold-pulse 2.8s ease-in-out infinite;
+            text-shadow: 0 0 12px rgba(212,175,55,0.4);
+        }
+
+        /* ブランド名 */
+        .loader-brand {
+            font-size: 0.6rem;
+            color: rgba(212,175,55,0.4);
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        @keyframes gold-pulse {
+            0%, 100% { opacity: 0.45; text-shadow: 0 0 8px rgba(212,175,55,0.2); }
+            50%       { opacity: 1;    text-shadow: 0 0 20px rgba(212,175,55,0.6), 0 0 40px rgba(212,175,55,0.2); }
         }
 
         #scanning-overlay {
@@ -45,7 +110,15 @@
 
 <body>
     <div id="loader" class="arjs-loader">
-        <div style="font-size: 1.2rem; color: #d4af37;">芸術に命を吹き込んでいます...</div>
+        <!-- パーティクル描画キャンバス -->
+        <canvas id="particle-canvas"></canvas>
+
+        <div class="loader-content">
+            <div class="loader-line"></div>
+            <div class="loader-text">芸術に命を吹き込んでいます...</div>
+            <div class="loader-line"></div>
+            <div class="loader-brand">My Artkit Premium</div>
+        </div>
     </div>
 
     <div id="scanning-overlay" style="display: none;">
@@ -115,9 +188,71 @@
             dogVideo.pause();
         }
 
+        // ===== パーティクル =====
+        (function () {
+            var canvas = document.getElementById('particle-canvas');
+            var ctx = canvas.getContext('2d');
+            var particles = [];
+            var W, H;
+
+            function resize() {
+                W = canvas.width  = canvas.offsetWidth;
+                H = canvas.height = canvas.offsetHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            function rand(min, max) { return min + Math.random() * (max - min); }
+
+            // 粒子を生成
+            for (var i = 0; i < 55; i++) {
+                particles.push({
+                    x:     rand(0, 1),   // 0〜1 の相対座標
+                    y:     rand(0, 1),
+                    size:  rand(0.8, 2.2),
+                    speedX: rand(-0.08, 0.08),
+                    speedY: rand(-0.18, -0.06),  // ふんわり上昇
+                    alpha:  rand(0, 1),
+                    alphaSpeed: rand(0.004, 0.012),
+                    alphaDir: 1
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                particles.forEach(function (p) {
+                    // 位置を更新
+                    p.x += p.speedX / W * 60;
+                    p.y += p.speedY / H * 60;
+                    if (p.y < -0.05) { p.y = 1.05; p.x = rand(0, 1); }
+                    if (p.x < 0) p.x = 1;
+                    if (p.x > 1) p.x = 0;
+
+                    // アルファを往復
+                    p.alpha += p.alphaSpeed * p.alphaDir;
+                    if (p.alpha >= 1) { p.alpha = 1; p.alphaDir = -1; }
+                    if (p.alpha <= 0) { p.alpha = 0; p.alphaDir =  1; }
+
+                    // 描画（ゴールドのキラキラ）
+                    ctx.beginPath();
+                    ctx.arc(p.x * W, p.y * H, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(212,175,55,' + (p.alpha * 0.85) + ')';
+                    ctx.shadowColor = 'rgba(212,175,55,0.6)';
+                    ctx.shadowBlur  = 6;
+                    ctx.fill();
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        // ===== arReady: フェードアウトでARへ遷移 =====
         sceneEl.addEventListener('arReady', function () {
-            loader.style.display = 'none';
-            overlay.style.display = 'flex';
+            loader.classList.add('fade-out');
+            setTimeout(function () {
+                loader.style.display = 'none';
+                overlay.style.display = 'flex';
+            }, 1200);
         });
 
         sceneEl.addEventListener('targetFound', function () {
